@@ -37,6 +37,11 @@ public class CartTransactionListener implements RocketMQLocalTransactionListener
             // 执行本地事务：保存购物车 + 记录事务日志
             cartService.addToCartWithTxLog(cartDTO, txId);
 
+            if ("unknown".equalsIgnoreCase(cartDTO.getUsername())) {
+                log.warn("[CartTxListener] Scenario: Unknown. DB inserted but returning UNKNOWN to trigger check.");
+                return RocketMQLocalTransactionState.UNKNOWN;
+            }
+
             log.info("[CartTxListener] Local transaction committed. User: {}, Item: {}", cartDTO.getUsername(), cartDTO.getItemName());
             return RocketMQLocalTransactionState.COMMIT;
 
