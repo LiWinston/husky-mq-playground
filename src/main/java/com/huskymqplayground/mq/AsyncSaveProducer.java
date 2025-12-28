@@ -39,4 +39,19 @@ public class AsyncSaveProducer {
             }
         });
     }
+
+    public void sendOrderedUserLog(UserLogDTO userLogDTO, String hashKey) {
+        // Topic: user-log-topic
+        String topic = "user-log-topic";
+
+        // 构建消息
+        org.springframework.messaging.Message<UserLogDTO> message = MessageBuilder.withPayload(userLogDTO)
+                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, userLogDTO.getTraceId())
+                .build();
+
+        // Send ordered message (sync)
+        // hashKey 通常使用 userId 或 orderId，确保同一组消息进入同一个 Queue
+        rocketMQTemplate.syncSendOrderly(topic, message, hashKey);
+        log.info("Send ordered message success. keys: {}, hashKey: {}", userLogDTO.getTraceId(), hashKey);
+    }
 }

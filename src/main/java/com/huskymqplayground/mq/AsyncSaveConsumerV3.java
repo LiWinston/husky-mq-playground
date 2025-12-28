@@ -7,6 +7,7 @@ import com.huskymqplayground.mapper.UserLogMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.spring.annotation.ConsumeMode;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,11 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @Component
-@RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v3")
+@RocketMQMessageListener(
+    topic = "user-log-topic", 
+    consumerGroup = "husky-consumer-group-v3",
+    consumeMode = ConsumeMode.ORDERLY // 开启顺序消费模式
+)
 @ConditionalOnProperty(prefix = "rocketmq.consumer.switch.AsyncSave", name = "v3", havingValue = "true", matchIfMissing = true) // 默认开启
 @RequiredArgsConstructor
 public class AsyncSaveConsumerV3 extends BaseRocketMQListener<UserLogDTO> {
@@ -35,6 +40,12 @@ public class AsyncSaveConsumerV3 extends BaseRocketMQListener<UserLogDTO> {
     @Override
     protected void handleMessage(UserLogDTO message, MessageExt messageExt) {
         log.info("[V3-BaseClass] Received message. Keys: {}, Payload: {}", messageExt.getKeys(), message);
+
+        // 引入随机失败来测试重投和幂等
+        if (Math.random() < 0.5) { // 50% 概率模拟失败
+            log.warn("[V3-BaseClass] Simulating a processing failure for message. Keys: {}", messageExt.getKeys());
+            throw new RuntimeException("Simulated failure to trigger message redelivery.");
+        }
 
         // 业务逻辑变得非常纯粹
         UserLog userLog = new UserLog();
