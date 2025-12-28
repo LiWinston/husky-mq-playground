@@ -1,5 +1,6 @@
 package com.huskymqplayground.mq;
 
+import com.huskymqplayground.dto.OrderDTO;
 import com.huskymqplayground.dto.UserLogDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,24 +42,20 @@ public class AsyncSaveProducer {
     }
 
     /**
-     * 发送事务消息
-     * 流程：
-     * 1. 发送 Half Message (半消息) 到 MQ
-     * 2. MQ 收到后回调 TransactionListener.executeLocalTransaction
-     * 3. 根据 executeLocalTransaction 返回值 (COMMIT/ROLLBACK/UNKNOWN) 决定消息是否对消费者可见
+     * 订单事务消息
+     * 1. 发送 Half Message 到 MQ
+     * 2. Broker 回调 OrderTransactionListener.executeLocalTransaction 执行本地下单
+     * 3. 返回 COMMIT/ROLLBACK/UNKNOWN 决定消息是否投递给消费者
      */
-    public void sendTransactionalUserLog(UserLogDTO userLogDTO) {
-        String topic = "user-log-topic";
+    public void sendTransactionalOrder(OrderDTO orderDTO) {
+        String topic = "order-transaction-topic";
 
-        org.springframework.messaging.Message<UserLogDTO> message = MessageBuilder.withPayload(userLogDTO)
-                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, userLogDTO.getTraceId())
+        org.springframework.messaging.Message<OrderDTO> message = MessageBuilder.withPayload(orderDTO)
+                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, orderDTO.getTraceId())
                 .build();
 
-        // 发送事务消息
-        // arg: 传递给 executeLocalTransaction 的参数，这里我们不需要额外参数，传 null
         SendResult sendResult = rocketMQTemplate.sendMessageInTransaction(topic, message, null);
-
-        log.info("Send transactional message result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
+        log.info("Send transactional order result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
     }
 
     public void sendOrderedUserLog(UserLogDTO userLogDTO, String hashKey) {

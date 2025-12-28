@@ -1,5 +1,6 @@
 package com.huskymqplayground.controller;
 
+import com.huskymqplayground.dto.OrderDTO;
 import com.huskymqplayground.dto.UserLogDTO;
 import com.huskymqplayground.mq.AsyncSaveProducer;
 import lombok.RequiredArgsConstructor;
@@ -50,16 +51,19 @@ public class DemoController {
         return "Ordered messages sent:\n" + sb.toString();
     }
 
-    @PostMapping("/transactional-log")
-    public String sendTransactionalLog(@RequestBody UserLogDTO userLogDTO) {
+    @PostMapping("/transactional-order")
+    public String sendTransactionalOrder(@RequestBody OrderDTO orderDTO) {
         String traceId = UUID.randomUUID().toString();
-        userLogDTO.setTraceId(traceId);
-        
-        // 发送事务消息
-        // 注意：这里的 "发送" 只是发送 Half Message，真正的业务逻辑(DB插入)在 Listener 中执行
-        asyncSaveProducer.sendTransactionalUserLog(userLogDTO);
-        
-        return "Transactional message sent (Half Message). TraceId: " + traceId + 
-               ". Check logs for 'TxListener' to see local transaction execution.";
+        orderDTO.setTraceId(traceId);
+
+        if (orderDTO.getOrderNo() == null || orderDTO.getOrderNo().isEmpty()) {
+            orderDTO.setOrderNo("ORD-" + UUID.randomUUID());
+        }
+
+        // 发送订单事务消息（Half Message），本地事务在 Listener 中执行
+        asyncSaveProducer.sendTransactionalOrder(orderDTO);
+
+        return "Transactional order sent (Half Message). TraceId: " + traceId +
+               ". Check logs for 'OrderTxListener' to see local transaction execution.";
     }
 }
