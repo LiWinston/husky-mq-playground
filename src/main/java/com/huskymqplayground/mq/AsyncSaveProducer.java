@@ -41,22 +41,7 @@ public class AsyncSaveProducer {
         });
     }
 
-    /**
-     * 订单事务消息
-     * 1. 发送 Half Message 到 MQ
-     * 2. Broker 回调 OrderTransactionListener.executeLocalTransaction 执行本地下单
-     * 3. 返回 COMMIT/ROLLBACK/UNKNOWN 决定消息是否投递给消费者
-     */
-    public void sendTransactionalOrder(OrderDTO orderDTO) {
-        String topic = "order-transaction-topic";
 
-        org.springframework.messaging.Message<OrderDTO> message = MessageBuilder.withPayload(orderDTO)
-                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, orderDTO.getTraceId())
-                .build();
-
-        SendResult sendResult = rocketMQTemplate.sendMessageInTransaction(topic, message, null);
-        log.info("Send transactional order result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
-    }
 
     public void sendOrderedUserLog(UserLogDTO userLogDTO, String hashKey) {
         // Topic: user-log-topic

@@ -1,8 +1,10 @@
 package com.huskymqplayground.controller;
 
+import com.huskymqplayground.dto.CartDTO;
 import com.huskymqplayground.dto.OrderDTO;
 import com.huskymqplayground.dto.UserLogDTO;
 import com.huskymqplayground.mq.AsyncSaveProducer;
+import com.huskymqplayground.mq.ECommerceProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +19,7 @@ import java.util.UUID;
 public class DemoController {
 
     private final AsyncSaveProducer asyncSaveProducer;
+    private final ECommerceProducer eCommerceProducer;
 
     @PostMapping("/log")
     public String sendLog(@RequestBody UserLogDTO userLogDTO) {
@@ -61,9 +64,21 @@ public class DemoController {
         }
 
         // 发送订单事务消息（Half Message），本地事务在 Listener 中执行
-        asyncSaveProducer.sendTransactionalOrder(orderDTO);
+        eCommerceProducer.sendTransactionalOrder(orderDTO);
 
         return "Transactional order sent (Half Message). TraceId: " + traceId +
                ". Check logs for 'OrderTxListener' to see local transaction execution.";
+    }
+
+    @PostMapping("/transactional-cart")
+    public String sendTransactionalCart(@RequestBody CartDTO cartDTO) {
+        String traceId = UUID.randomUUID().toString();
+        cartDTO.setTraceId(traceId);
+
+        // 发送购物车事务消息
+        eCommerceProducer.sendTransactionalCart(cartDTO);
+
+        return "Transactional cart message sent. TraceId: " + traceId +
+               ". This will trigger: Cart Tx -> Cart Consumer -> Order Tx -> Order Consumer.";
     }
 }
