@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Slf4j
 @Component
-@RocketMQTransactionListener(txProducerGroup = ECommerceProducer.ORDER_TX_GROUP)
+@RocketMQTransactionListener(rocketMQTemplateBeanName = "orderRocketMQTemplate")
 @RequiredArgsConstructor
 public class OrderTransactionListener implements RocketMQLocalTransactionListener {
 

@@ -15,11 +15,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ECommerceProducer {
 
-    private final RocketMQTemplate rocketMQTemplate;
-
-    // 定义 Producer Group 常量，需与 Listener 中的 txProducerGroup 对应
-    public static final String CART_TX_GROUP = "cart-tx-group";
-    public static final String ORDER_TX_GROUP = "order-tx-group";
+    private final CartRocketMQTemplate cartRocketMQTemplate;
+    private final OrderRocketMQTemplate orderRocketMQTemplate;
 
     /**
      * 发送购物车事务消息
@@ -31,8 +28,8 @@ public class ECommerceProducer {
                 .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, cartDTO.getTraceId())
                 .build();
 
-        // 指定 txProducerGroup 发送事务消息
-        SendResult sendResult = rocketMQTemplate.sendMessageInTransaction(CART_TX_GROUP, topic, message, null);
+        // 使用专用的 CartRocketMQTemplate 发送事务消息
+        SendResult sendResult = cartRocketMQTemplate.sendMessageInTransaction(topic, message, null);
         log.info("Send transactional cart result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
     }
 
@@ -46,8 +43,8 @@ public class ECommerceProducer {
                 .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, orderDTO.getTraceId())
                 .build();
 
-        // 指定 txProducerGroup 发送事务消息
-        SendResult sendResult = rocketMQTemplate.sendMessageInTransaction(ORDER_TX_GROUP, topic, message, null);
+        // 使用专用的 OrderRocketMQTemplate 发送事务消息
+        SendResult sendResult = orderRocketMQTemplate.sendMessageInTransaction(topic, message, null);
         log.info("Send transactional order result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
     }
 }

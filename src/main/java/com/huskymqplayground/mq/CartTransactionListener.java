@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
-@RocketMQTransactionListener(txProducerGroup = ECommerceProducer.CART_TX_GROUP)
+@RocketMQTransactionListener(rocketMQTemplateBeanName = "cartRocketMQTemplate")
 @RequiredArgsConstructor
 public class CartTransactionListener implements RocketMQLocalTransactionListener {
 
