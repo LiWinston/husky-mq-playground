@@ -50,6 +50,48 @@
 - **消费者**: 配置 `consumeMode = ConsumeMode.ORDERLY`。
 - **效果**: 当某条消息消费失败时，Broker 会锁定队列并阻塞后续消息，直到该消息重试成功。验证了“前序失败，后续等待”的严格顺序性。
 
+## ⛓️ 事务消息 (Transactional Message) - 订单场景
+
+本项目通过“创建订单”这一典型场景，演示了 RocketMQ 事务消息如何保证**上游业务（数据库操作）**与**下游通知（消息发送）**的最终一致性。
+
+### 1. 核心流程
+
+1.  **Producer (DemoController)**:
+    -   调用 `rocketMQTemplate.sendMessageInTransaction` 发送一条 **Half Message** (半消息)。
+    -   此时消息对消费者不可见。
+
+2.  **Broker & TransactionListener**:
+    -   Broker 收到半消息后，回调 `OrderTransactionListener` 的 `executeLocalTransaction` 方法。
+    -   Listener 内部调用 `OrderService`，该 Service 在一个 `@Transactional` 注解的本地事务中，**同时**执行以下两件事：
+        -   **a. 插入订单数据** (`purchase_order` 表)
+        -   **b. 插入事务日志** (`order_transaction` 表，记录了 RocketMQ 的事务 ID `txId`)
+    -   根据本地事务的执行结果，返回三种状态：
+        -   `COMMIT`: 本地事务成功，通知 Broker 投递消息。
+        -   `ROLLBACK`: 本地事务失败，通知 Broker 删除半消息。
+        -   `UNKNOWN`: 因网络超时或应用崩溃，未返回状态。
+
+3.  **Broker & 回查机制**:
+    -   如果收到 `UNKNOWN` 或长时间未收到任何回执，Broker 会**主动回查** `OrderTransactionListener` 的 `checkLocalTransaction` 方法。
+    -   该方法通过查询 `order_transaction` 表中是否存在 `txId` 来判断本地事务是否成功。
+        -   **查到了**: 返回 `COMMIT`。
+        -   **没查到**: 返回 `ROLLBACK`。
+
+4.  **Consumer (OrderConsumerV3)**:
+    -   只有当 Broker 最终确认消息为 `COMMIT` 状态时，才会将消息投递给消费者。
+    -   消费者收到消息后，执行自己的业务逻辑（如打印订单详情）。
+
+### 2. 接口测试
+
+| 接口 | 方法 | 描述 | 示例 Body |
+| --- | --- | --- | --- |
+| `/api/demo/transactional-order` | POST | 发送事务消息 (测试最终一致性) | `{"buyer": "alice", "itemName": "Keyboard", "quantity": 1, "amount": 199.00}` |
+
+#### 测试场景
+
+-   **正常提交**: 使用 `buyer: "alice"`，本地事务成功，消息被正常消费。
+-   **本地回滚**: 使用 `buyer: "rollback"`，本地事务直接失败，消息被删除，下游无感知。
+-   **状态未知与回查**: 使用 `buyer: "unknown"`，本地事务成功但返回 `UNKNOWN`，Broker 会在稍后回查，并最终根据事务日志表决定投递消息。要令消息失效，可手动删除事务日志记录、破坏一致性，来人造一种“网络超时且本地事务未提交”的场景。
+
 ## 🧪 接口测试
 
 项目提供了 `DemoController` 用于触发测试场景：
@@ -58,6 +100,7 @@
 | --- | --- | --- | --- |
 | `/api/demo/log` | POST | 发送普通消息 (测试幂等) | `{"username": "test", "operation": "login"}` |
 | `/api/demo/ordered-log` | POST | 发送顺序消息 (测试顺序消费) | `{"username": "orderUser", "operation": "step"}` |
+| `/api/demo/transactional-order` | POST | 发送事务消息 (测试最终一致性) | `{"buyer": "alice", "itemName": "Keyboard", "quantity": 1, "amount": 199.00}` |
 
 ## 📝 待办事项 (Todo)
 
@@ -65,6 +108,7 @@
 - [x] 幂等性架构 (V1 -> V3)
 - [x] 顺序消费验证
 - [ ] 延迟消息与死信队列处理
+- [x] 事务消息验证
 - [ ] Seata 分布式事务集成
 - [ ] 消息轨迹追踪
 
