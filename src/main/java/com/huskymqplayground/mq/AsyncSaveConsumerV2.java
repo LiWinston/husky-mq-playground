@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Component
 @RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v2")
+@ConditionalOnProperty(prefix = "rocketmq.consumer.switch.AsyncSave", name = "v2", havingValue = "true")
 @RequiredArgsConstructor
 public class AsyncSaveConsumerV2 implements RocketMQListener<MessageExt> {
 

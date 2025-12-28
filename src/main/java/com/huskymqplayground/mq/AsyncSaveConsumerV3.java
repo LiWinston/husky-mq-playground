@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Component
 @RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v3")
+@ConditionalOnProperty(prefix = "rocketmq.consumer.switch.AsyncSave", name = "v3", havingValue = "true", matchIfMissing = true) // 默认开启
 @RequiredArgsConstructor
 public class AsyncSaveConsumerV3 extends BaseRocketMQListener<UserLogDTO> {
 

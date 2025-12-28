@@ -9,6 +9,7 @@ import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Component
 @RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v1")
+@ConditionalOnProperty(prefix = "rocketmq.consumer.switch.AsyncSave", name = "v1", havingValue = "true")
 @RequiredArgsConstructor
 public class AsyncSaveConsumerV1 implements RocketMQListener<UserLogDTO> {
 
