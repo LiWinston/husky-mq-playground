@@ -21,8 +21,14 @@ public class AsyncSaveConsumer implements RocketMQListener<UserLogDTO> {
 
     @Override
     public void onMessage(UserLogDTO message) {
-        log.info("Received message: {}", message);
+        log.info("Received message. TraceId: {}, Payload: {}", message.getTraceId(), message);
         
+        // 幂等性校验示例 (实际生产中通常使用 Redis 或 数据库唯一索引)
+        // if (redis.exists(message.getTraceId())) {
+        //     log.warn("Duplicate message detected. TraceId: {}", message.getTraceId());
+        //     return;
+        // }
+
         UserLog userLog = new UserLog();
         userLog.setUsername(message.getUsername());
         userLog.setOperation(message.getOperation());

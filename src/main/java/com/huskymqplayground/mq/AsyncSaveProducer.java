@@ -20,16 +20,22 @@ public class AsyncSaveProducer {
         // Topic: user-log-topic
         String topic = "user-log-topic";
         
+        // 构建消息，设置 Keys (业务唯一标识)
+        // 最佳实践：Keys 应该唯一且方便查询，如订单号、流水号、UUID
+        org.springframework.messaging.Message<UserLogDTO> message = MessageBuilder.withPayload(userLogDTO)
+                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, userLogDTO.getTraceId())
+                .build();
+
         // Send async message
-        rocketMQTemplate.asyncSend(topic, MessageBuilder.withPayload(userLogDTO).build(), new SendCallback() {
+        rocketMQTemplate.asyncSend(topic, message, new SendCallback() {
             @Override
             public void onSuccess(SendResult sendResult) {
-                log.info("Send message success. msgId: {}", sendResult.getMsgId());
+                log.info("Send message success. msgId: {}, keys: {}", sendResult.getMsgId(), userLogDTO.getTraceId());
             }
 
             @Override
             public void onException(Throwable e) {
-                log.error("Send message failed.", e);
+                log.error("Send message failed. keys: {}", userLogDTO.getTraceId(), e);
             }
         });
     }
