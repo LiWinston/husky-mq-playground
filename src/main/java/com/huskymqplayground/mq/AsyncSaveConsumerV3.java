@@ -26,6 +26,11 @@ public class AsyncSaveConsumerV3 extends BaseRocketMQListener<UserLogDTO> {
 
     @Override
     @RocketMQIdempotent(prefix = "mq:idempotent:v3:") // 开启幂等，使用 V3 专属前缀
+    public void onMessage(MessageExt messageExt) {
+        super.onMessage(messageExt);
+    }
+
+    @Override
     protected void handleMessage(UserLogDTO message, MessageExt messageExt) {
         log.info("[V3-BaseClass] Received message. Keys: {}, Payload: {}", messageExt.getKeys(), message);
 
