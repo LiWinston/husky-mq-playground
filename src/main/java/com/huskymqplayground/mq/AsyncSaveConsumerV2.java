@@ -17,9 +17,9 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Component
-@RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group")
+@RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v2")
 @RequiredArgsConstructor
-public class AsyncSaveConsumer implements RocketMQListener<MessageExt> {
+public class AsyncSaveConsumerV2 implements RocketMQListener<MessageExt> {
 
     private final UserLogMapper userLogMapper;
     private final ObjectMapper objectMapper;
@@ -32,19 +32,19 @@ public class AsyncSaveConsumer implements RocketMQListener<MessageExt> {
             String json = new String(messageExt.getBody(), StandardCharsets.UTF_8);
             UserLogDTO message = objectMapper.readValue(json, UserLogDTO.class);
             
-            log.info("Received message. Keys: {}, Payload: {}", messageExt.getKeys(), message);
+            log.info("[V2-AOP] Received message. Keys: {}, Payload: {}", messageExt.getKeys(), message);
 
             // 2. 业务逻辑
             UserLog userLog = new UserLog();
             userLog.setUsername(message.getUsername());
-            userLog.setOperation(message.getOperation());
+            userLog.setOperation(message.getOperation() + "_V2"); // 标记 V2 处理
             userLog.setCreateTime(LocalDateTime.now());
             
             userLogMapper.insert(userLog);
-            log.info("Saved user log to database. ID: {}", userLog.getId());
+            log.info("[V2-AOP] Saved user log to database. ID: {}", userLog.getId());
             
         } catch (Exception e) {
-            log.error("Consume failed.", e);
+            log.error("[V2-AOP] Consume failed.", e);
             throw new RuntimeException(e); // 抛出异常以触发重试
         }
     }
