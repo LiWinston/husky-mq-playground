@@ -40,6 +40,27 @@ public class AsyncSaveProducer {
         });
     }
 
+    /**
+     * 发送事务消息
+     * 流程：
+     * 1. 发送 Half Message (半消息) 到 MQ
+     * 2. MQ 收到后回调 TransactionListener.executeLocalTransaction
+     * 3. 根据 executeLocalTransaction 返回值 (COMMIT/ROLLBACK/UNKNOWN) 决定消息是否对消费者可见
+     */
+    public void sendTransactionalUserLog(UserLogDTO userLogDTO) {
+        String topic = "user-log-topic";
+
+        org.springframework.messaging.Message<UserLogDTO> message = MessageBuilder.withPayload(userLogDTO)
+                .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, userLogDTO.getTraceId())
+                .build();
+
+        // 发送事务消息
+        // arg: 传递给 executeLocalTransaction 的参数，这里我们不需要额外参数，传 null
+        SendResult sendResult = rocketMQTemplate.sendMessageInTransaction(topic, message, null);
+
+        log.info("Send transactional message result: {}, msgId: {}", sendResult.getSendStatus(), sendResult.getMsgId());
+    }
+
     public void sendOrderedUserLog(UserLogDTO userLogDTO, String hashKey) {
         // Topic: user-log-topic
         String topic = "user-log-topic";

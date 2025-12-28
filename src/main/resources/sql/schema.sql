@@ -8,3 +8,9 @@ CREATE TABLE IF NOT EXISTS `user_log` (
   `create_time` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `local_transaction` (
+  `tx_id` varchar(64) NOT NULL,
+  `create_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`tx_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

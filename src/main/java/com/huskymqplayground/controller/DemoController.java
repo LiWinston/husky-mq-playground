@@ -49,4 +49,17 @@ public class DemoController {
         
         return "Ordered messages sent:\n" + sb.toString();
     }
+
+    @PostMapping("/transactional-log")
+    public String sendTransactionalLog(@RequestBody UserLogDTO userLogDTO) {
+        String traceId = UUID.randomUUID().toString();
+        userLogDTO.setTraceId(traceId);
+        
+        // 发送事务消息
+        // 注意：这里的 "发送" 只是发送 Half Message，真正的业务逻辑(DB插入)在 Listener 中执行
+        asyncSaveProducer.sendTransactionalUserLog(userLogDTO);
+        
+        return "Transactional message sent (Half Message). TraceId: " + traceId + 
+               ". Check logs for 'TxListener' to see local transaction execution.";
+    }
 }
