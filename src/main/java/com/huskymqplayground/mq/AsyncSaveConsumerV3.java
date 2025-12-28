@@ -18,10 +18,7 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @Component
-@RocketMQMessageListener(
-        topic = "user-log-topic",
-        consumerGroup = "husky-consumer-group-v3"
-)
+@RocketMQMessageListener(topic = "user-log-topic", consumerGroup = "husky-consumer-group-v3")
 @RequiredArgsConstructor
 public class AsyncSaveConsumerV3 extends BaseRocketMQListener<UserLogDTO> {
 
